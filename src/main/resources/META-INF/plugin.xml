@@ -9,7 +9,11 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.sfdez0.psikick.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.sfdez0.psikick.startup.MyProjectActivity" />
+        <toolWindow
+                id="PsiKick"
+                anchor="right"
+                icon="AllIcons.General.Web"
+                factoryClass="com.github.sfdez0.psikick.toolWindow.PsiKickFactory" />
+        <postStartupActivity implementation="com.github.sfdez0.psikick.startup.PsiKickActivity" />
     </extensions>
 </idea-plugin>
