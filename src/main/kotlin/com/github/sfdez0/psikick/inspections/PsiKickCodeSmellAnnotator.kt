@@ -25,7 +25,7 @@ import java.time.Duration
 data class File(val code: String, val fileName: String)
 
 /**
- * Represents a code smell detected by the AI.
+ * Represents a code smell detected by Gemini.
  *
  * @property startOffset the start offset of the code smell.
  * @property endOffset the end offset of the code smell.
@@ -34,7 +34,36 @@ data class File(val code: String, val fileName: String)
 data class CodeSmell(val startOffset: Int, val endOffset: Int, val message: String)
 
 /**
- * External annotator that uses an AI API to analyze Kotlin code and detect code smells.
+ * Represents the request body for the Gemini API.
+ *
+ * @property contents the content of the request.
+ * @property generationConfig the generation configuration.
+ */
+data class GeminiRequest(val contents: List<GeminiContent>, val generationConfig: GenerationConfig)
+
+/**
+ * Represents the content of the request body.
+ *
+ * @property parts the parts of the content.
+ */
+data class GeminiContent(val parts: List<GeminiPart>)
+
+/**
+ * Represents a part of the content.
+ *
+ * @property text the text of the part.
+ */
+data class GeminiPart(val text: String)
+
+/**
+ * Represents the generation configuration.
+ *
+ * @property responseMimeType the MIME type of the response.
+ */
+data class GenerationConfig(val responseMimeType: String = "application/json")
+
+/**
+ * External annotator that uses a Gemini API to analyze Kotlin code and detect code smells.
  */
 class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
     companion object {
@@ -94,28 +123,10 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
         }
 
         // Build the request body with the prompt and API key
-        val requestBody = JsonObject().apply {
-            val contents = JsonArray()
-            val contentPart = JsonObject()
-            val parts = JsonArray()
-            val textPart = JsonObject()
-
-            textPart.addProperty("text", finalPrompt)
-            parts.add(textPart)
-            contentPart.add("parts", parts)
-            contents.add(contentPart)
-
-            add("contents", contents)
-
-            val generationConfig = JsonObject()
-            generationConfig.addProperty("responseMimeType", "application/json")
-            add("generationConfig", generationConfig)
-        }
-
-        // Build the HTTP client
-        val client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .build()
+        val requestBody = GeminiRequest(
+            contents = listOf(GeminiContent(listOf(GeminiPart(text = finalPrompt)))),
+            generationConfig = GenerationConfig()
+        )
 
         // Build the HTTP request including the token
         val request = HttpRequest.newBuilder()
@@ -124,6 +135,11 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             .header("x-goog-api-key", token) // Google token header
             .timeout(Duration.ofSeconds(120)) // TODO set proper timeout
             .POST(HttpRequest.BodyPublishers.ofString(Gson().toJson(requestBody)))
+            .build()
+
+        // Build the HTTP client
+        val client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
             .build()
 
         try {
