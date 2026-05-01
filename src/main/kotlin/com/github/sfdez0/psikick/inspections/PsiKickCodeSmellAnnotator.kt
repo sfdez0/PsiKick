@@ -22,7 +22,7 @@ import java.time.Duration
  * @property code the code to be analyzed.
  * @property fileName the name of the file.
  */
-data class File(val code: String, val fileName: String)
+data class AnalyzedFile(val code: String, val fileName: String)
 
 /**
  * Represents a code smell detected by Gemini.
@@ -65,7 +65,7 @@ data class GenerationConfig(val responseMimeType: String = "application/json")
 /**
  * External annotator that uses a Gemini API to analyze Kotlin code and detect code smells.
  */
-class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
+class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell>>() {
     private val log = Logger.getInstance(PsiKickCodeSmellAnnotator::class.java)
     private val prompt = """
             You are an expert Kotlin static code analyzer (linter).
@@ -92,8 +92,8 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
      * @param file the file to be analyzed.
      * @return [File] the collected information.
      */
-    override fun collectInformation(file: PsiFile): File {
-        return File(file.text, file.name)
+    override fun collectInformation(file: PsiFile): AnalyzedFile {
+        return AnalyzedFile(file.text, file.name)
     }
 
     /**
@@ -102,7 +102,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
      * @param collectedInfo the collected information.
      * @return [List] of [CodeSmell].
      */
-    override fun doAnnotate(collectedInfo: File): List<CodeSmell> {
+    override fun doAnnotate(collectedInfo: AnalyzedFile): List<CodeSmell> {
         log.info("PsiKick: Analyzing file ${collectedInfo.fileName}")
         val aiResponse = mutableListOf<CodeSmell>()
 
