@@ -186,8 +186,15 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
      * @param holder the annotation holder.
      */
     override fun apply(file: PsiFile, annotationResult: List<CodeSmell>, holder: AnnotationHolder) {
+        val fileLength = file.textLength
+
         // Create annotations for each code smell
         for (smell in annotationResult) {
+            if (smell.startOffset < 0 || smell.endOffset > fileLength || smell.startOffset > smell.endOffset) {
+                log.warn("PsiKick: Invalid code smell detected: ${smell.message}")
+                continue
+            }
+
             // Range of the code smell
             val range = TextRange(smell.startOffset, smell.endOffset)
 
