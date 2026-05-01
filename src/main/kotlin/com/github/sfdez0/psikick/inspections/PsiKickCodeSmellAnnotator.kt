@@ -1,6 +1,7 @@
 package com.github.sfdez0.psikick.inspections
 
 import com.github.sfdez0.psikick.settings.PsiKickSettings
+import com.github.sfdez0.psikick.settings.PsiKickSettings.selectedModel
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -103,7 +104,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
      * @return [List] of [CodeSmell].
      */
     override fun doAnnotate(collectedInfo: AnalyzedFile): List<CodeSmell> {
-        log.info("PsiKick: Analyzing file ${collectedInfo.fileName}")
+        log.info("PsiKick: Analyzing file ${collectedInfo.fileName} using ${selectedModel.displayName}")
         val aiResponse = mutableListOf<CodeSmell>()
 
         // Get the API token from the settings
@@ -127,7 +128,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
 
         // Build the HTTP request including the token
         val request = HttpRequest.newBuilder()
-            .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent"))
+            .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/${selectedModel.apiId}:generateContent"))
             .header("Content-Type", "application/json")
             .header("x-goog-api-key", token) // Google token header
             .timeout(Duration.ofSeconds(120)) // TODO set proper timeout

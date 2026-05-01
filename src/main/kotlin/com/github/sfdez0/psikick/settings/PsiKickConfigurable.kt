@@ -1,7 +1,10 @@
 package com.github.sfdez0.psikick.settings
 
+import com.github.sfdez0.psikick.models.GeminiModel
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.Configurable
+import com.intellij.openapi.ui.ComboBox
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.dsl.builder.panel
 import javax.swing.JComponent
@@ -9,41 +12,38 @@ import javax.swing.SwingUtilities
 
 class PsiKickConfigurable : Configurable {
     /**
+     * The saved API token
+     */
+    private var savedToken: String = ""
+
+    /**
      * The password field for the API token.
      */
     private val tokenField = JBPasswordField()
 
     /**
-     * The saved API token
+     * The combo box for selecting the model.
      */
-    private var savedToken: String = ""
-
-
-    /**
-     * Returns the display name of the plugin.
-     *
-     * @return [String] display name of the plugin
-     */
-    override fun getDisplayName(): String = "PsiKick"
-
-
-    /**
-     * Checks if the settings have been modified.
-     *
-     * @return [Boolean] true if the settings have been modified, false otherwise
-     */
-    override fun isModified(): Boolean {
-        val currentToken = String(tokenField.password)
-        return currentToken != savedToken
+    private val modelComboBox = ComboBox(GeminiModel.entries.toTypedArray()).apply {
+        renderer = SimpleListCellRenderer.create("") { it.displayName }
     }
 
-    /**
-     * Creates the settings panel.
-     *
-     * @return [JComponent] the settings panel
-     */
+    override fun getDisplayName(): String = "PsiKick"
+
+    override fun isModified(): Boolean {
+        // Check and return if the token or model has been changed
+        val currentToken = String(tokenField.password)
+        val currentModel = modelComboBox.selectedItem as GeminiModel
+
+        return currentToken != savedToken || currentModel != PsiKickSettings.selectedModel
+    }
+
     override fun createComponent(): JComponent {
         return panel {
+            row("Model:"){
+                cell(modelComboBox)
+                    .comment("Choose a model that fits your API quota and performance needs")
+            }
             row("Gemini API Token:") {
                 cell(tokenField)
                     .comment("Get your token from Google AI Studio")
@@ -51,18 +51,15 @@ class PsiKickConfigurable : Configurable {
         }
     }
 
-    /**
-     * Applies the settings.
-     */
     override fun apply() {
+        // Save the token and model
         val newToken = String(tokenField.password)
         PsiKickSettings.apiToken = newToken
         savedToken = newToken
+
+        PsiKickSettings.selectedModel = modelComboBox.item
     }
 
-    /**
-     * Loads the settings from the persistent storage and updates the UI.
-     */
     override fun reset() {
         tokenField.text = ""
         savedToken = ""
@@ -77,5 +74,7 @@ class PsiKickConfigurable : Configurable {
                 tokenField.text = loadedToken
             }
         }
+
+        modelComboBox.item = PsiKickSettings.selectedModel
     }
 }

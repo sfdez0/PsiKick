@@ -38,6 +38,8 @@
                 language="kotlin"
                 implementationClass="com.github.sfdez0.psikick.inspections.PsiKickCodeSmellAnnotator"/>
 
+        <applicationService serviceImplementation="com.github.sfdez0.psikick.settings.PsiKickState"/>
+
         <applicationConfigurable
                 parentId="tools"
                 instance="com.github.sfdez0.psikick.settings.PsiKickConfigurable"
