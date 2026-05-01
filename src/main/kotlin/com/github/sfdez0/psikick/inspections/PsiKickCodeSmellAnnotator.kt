@@ -7,6 +7,7 @@ import com.google.gson.JsonObject
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import java.net.URI
@@ -55,6 +56,8 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             
             Code to analyze:
         """
+
+        private val LOG = Logger.getInstance(PsiKickCodeSmellAnnotator::class.java)
     }
 
     /**
@@ -74,11 +77,13 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
      * @return [List] of [CodeSmell].
      */
     override fun doAnnotate(collectedInfo: File): List<CodeSmell> {
+        LOG.info("PsiKick: Analyzing file ${collectedInfo.fileName}")
         val aiResponse = mutableListOf<CodeSmell>()
 
         // Get the API token from the settings
         val token = PsiKickSettings.apiToken
         if (token.isNullOrBlank()) {
+            LOG.info("PsiKick: Analysis aborted, API token not found")
             return aiResponse
         }
 
@@ -107,8 +112,6 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             add("generationConfig", generationConfig)
         }
 
-        println("PsiKick: Analyzing file ${collectedInfo.fileName}...")
-
         // Build the HTTP client
         val client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
@@ -124,12 +127,11 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             .build()
 
         try {
-            println("PsiKick: Sending request...")
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
 
-            println("PsiKick: Response: ${response.statusCode()} - ${response.body()}")
-
             if (response.statusCode() == 200) {
+                LOG.info("PsiKick: Analysis completed")
+
                 // Get the JSON content from the response
                 val jsonResponse = Gson().fromJson(response.body(), JsonObject::class.java)
                 val textResponse = jsonResponse
@@ -153,11 +155,11 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
                     )
                 }
             } else {
-                println("Error: ${response.statusCode()} - ${response.body()}")
+                LOG.warn("PsiKick: Error analyzing file ${collectedInfo.fileName} - Request status Code: ${response.statusCode()}")
             }
 
         } catch (e: Exception) {
-            println("Error: ${e.message}")
+            LOG.error("PsiKick: Error analyzing file ${collectedInfo.fileName} - Exception: ${e.localizedMessage}")
         }
 
         return aiResponse
