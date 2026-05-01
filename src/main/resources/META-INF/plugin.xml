@@ -27,6 +27,10 @@
 
     <resource-bundle>messages.PsiKickBundle</resource-bundle>
 
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK2="true"/>
+    </extensions>
+
     <extensions defaultExtensionNs="com.intellij">
         <externalAnnotator
                 language="kotlin"
