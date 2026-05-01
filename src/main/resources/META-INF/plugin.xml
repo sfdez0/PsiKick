@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.sfdez0.psikick</id>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <name>PsiKick</name>
     <vendor>sfdez0</vendor>
 
@@ -16,9 +16,11 @@
     ]]></description>
 
     <change-notes><![CDATA[
-    <b>v0.0.1</b>
+    <b>v0.0.2</b>
     <ul>
-      <li>Initial release</li>
+      <li>Solved K2 mode incompatibility error</li>
+      <li>Added code smell offset validation</li>
+      <li>Updated build plugins</li>
     </ul>
     ]]></change-notes>
 
