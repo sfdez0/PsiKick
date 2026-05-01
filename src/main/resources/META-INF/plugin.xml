@@ -1,8 +1,26 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.sfdez0.psikick</id>
+    <version>0.0.1</version>
     <name>PsiKick</name>
     <vendor>sfdez0</vendor>
+
+    <description><![CDATA[
+    <b>PsiKick</b> uses Gemini 3.1 Flash-Lite Preview to find and highlight code smells in Kotlin.
+    <br><br>
+    <b>Features:</b>
+    <ul>
+      <li>Detects <code>!!</code>, deep nesting, empty catch blocks and lack of immutability.</li>
+      <li>Configurable API Key in <i>Tools > PsiKick</i>.</li>
+    </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <b>v0.0.1</b>
+    <ul>
+      <li>Initial release</li>
+    </ul>
+    ]]></change-notes>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>org.jetbrains.kotlin</depends>
