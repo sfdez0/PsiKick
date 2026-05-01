@@ -9,11 +9,14 @@
     <resource-bundle>messages.PsiKickBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow
-                id="PsiKick"
-                anchor="right"
-                icon="AllIcons.General.Web"
-                factoryClass="com.github.sfdez0.psikick.toolWindow.PsiKickFactory" />
-        <postStartupActivity implementation="com.github.sfdez0.psikick.startup.PsiKickActivity" />
+        <externalAnnotator
+                language="kotlin"
+                implementationClass="com.github.sfdez0.psikick.inspections.PsiKickCodeSmellAnnotator"/>
+
+        <applicationConfigurable
+                parentId="tools"
+                instance="com.github.sfdez0.psikick.settings.PsiKickConfigurable"
+                id="com.github.sfdez0.psikick.settings.PsiKickConfigurable"
+                displayName="PsiKick"/>
     </extensions>
 </idea-plugin>
