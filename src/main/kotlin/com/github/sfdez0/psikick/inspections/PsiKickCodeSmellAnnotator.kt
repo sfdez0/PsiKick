@@ -66,8 +66,8 @@ data class GenerationConfig(val responseMimeType: String = "application/json")
  * External annotator that uses a Gemini API to analyze Kotlin code and detect code smells.
  */
 class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
-    companion object {
-        private const val PROMPT = """
+    private val log = Logger.getInstance(PsiKickCodeSmellAnnotator::class.java)
+    private val prompt = """
             You are an expert Kotlin static code analyzer (linter).
             Analyze the Kotlin code attached and detect the following "code smells":
             - Double Bang (!! operator)
@@ -84,10 +84,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             the "message" under 15 words
             
             Code to analyze:
-        """
-
-        private val LOG = Logger.getInstance(PsiKickCodeSmellAnnotator::class.java)
-    }
+        """.trimIndent()
 
     /**
      * Collects information about the file to be analyzed.
@@ -106,19 +103,19 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
      * @return [List] of [CodeSmell].
      */
     override fun doAnnotate(collectedInfo: File): List<CodeSmell> {
-        LOG.info("PsiKick: Analyzing file ${collectedInfo.fileName}")
+        log.info("PsiKick: Analyzing file ${collectedInfo.fileName}")
         val aiResponse = mutableListOf<CodeSmell>()
 
         // Get the API token from the settings
         val token = PsiKickSettings.apiToken
         if (token.isNullOrBlank()) {
-            LOG.info("PsiKick: Analysis aborted, API token not found")
+            log.info("PsiKick: Analysis aborted, API token not found")
             return aiResponse
         }
 
         // Build the prompt with the code to analyze
         val finalPrompt = buildString {
-            append(PROMPT)
+            append(prompt)
             append(collectedInfo.code)
         }
 
@@ -146,7 +143,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
 
             if (response.statusCode() == 200) {
-                LOG.info("PsiKick: Analysis completed")
+                log.info("PsiKick: Analysis completed")
 
                 // Get the JSON content from the response
                 val jsonResponse = Gson().fromJson(response.body(), JsonObject::class.java)
@@ -171,11 +168,11 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
                     )
                 }
             } else {
-                LOG.warn("PsiKick: Error analyzing file ${collectedInfo.fileName} - Request status Code: ${response.statusCode()}")
+                log.warn("PsiKick: Error analyzing file ${collectedInfo.fileName} - Request status Code: ${response.statusCode()}")
             }
 
         } catch (e: Exception) {
-            LOG.error("PsiKick: Error analyzing file ${collectedInfo.fileName} - Exception: ${e.localizedMessage}")
+            log.error("PsiKick: Error analyzing file ${collectedInfo.fileName} - Exception: ${e.localizedMessage}")
         }
 
         return aiResponse
