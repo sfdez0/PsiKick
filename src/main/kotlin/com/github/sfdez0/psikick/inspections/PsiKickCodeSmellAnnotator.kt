@@ -130,7 +130,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
 
         // Build the HTTP request including the token
         val request = HttpRequest.newBuilder()
-            .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"))
+            .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent"))
             .header("Content-Type", "application/json")
             .header("x-goog-api-key", token) // Google token header
             .timeout(Duration.ofSeconds(120)) // TODO set proper timeout
