@@ -37,7 +37,7 @@ data class CodeSmell(val startOffset: Int, val endOffset: Int, val message: Stri
  */
 class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
     companion object {
-        private const val prompt = """
+        private const val PROMPT = """
             You are an expert Kotlin static code analyzer (linter).
             Analyze the Kotlin code attached and detect the following "code smells":
             - Double Bang (!! operator)
@@ -50,6 +50,8 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             - "start": (Int) The exact character index where the code smell begins (based on the provided code).
             - "end": (Int) The exact character index where the code smell ends.
             - "message": (String) A human-readable short description of the code smell.
+            Return a maximum of 5 code smells prioritizing the most cricital ones. Keep
+            the "message" under 15 words
             
             Code to analyze:
         """
@@ -82,7 +84,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
 
         // Build the prompt with the code to analyze
         val finalPrompt = buildString {
-            append(prompt)
+            append(PROMPT)
             append(collectedInfo.code)
         }
 
@@ -109,7 +111,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
 
         // Build the HTTP client
         val client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
+            .connectTimeout(Duration.ofSeconds(5))
             .build()
 
         // Build the HTTP request including the token
@@ -117,6 +119,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"))
             .header("Content-Type", "application/json")
             .header("x-goog-api-key", token) // Google token header
+            .timeout(Duration.ofSeconds(120)) // TODO set proper timeout
             .POST(HttpRequest.BodyPublishers.ofString(Gson().toJson(requestBody)))
             .build()
 
