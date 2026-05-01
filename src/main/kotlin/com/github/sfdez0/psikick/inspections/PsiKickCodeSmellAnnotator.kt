@@ -93,7 +93,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<File, List<CodeSmell>>() {
             val parts = JsonArray()
             val textPart = JsonObject()
 
-            textPart.addProperty("text", prompt)
+            textPart.addProperty("text", finalPrompt)
             parts.add(textPart)
             contentPart.add("parts", parts)
             contents.add(contentPart)
