@@ -5,6 +5,7 @@
     <vendor>sfdez0</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.kotlin</depends>
 
     <resource-bundle>messages.PsiKickBundle</resource-bundle>
 

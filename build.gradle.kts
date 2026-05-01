@@ -14,6 +14,9 @@ dependencies {
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
         intellijIdea("2026.1.1")
+
+        bundledPlugin("org.jetbrains.kotlin")
+
         testFramework(TestFrameworkType.Platform)
     }
 }
