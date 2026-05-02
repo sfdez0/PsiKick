@@ -6,12 +6,32 @@
 
 
 <!-- Plugin description -->
-PsiKick uses Gemini 3.1 Flash-Lite Preview to find and highlight code smells in Kotlin.
+PsiKick uses Gemini AI models to find and highlight code smells in Kotlin.
 
 Features:
-- Detects !!, deep nesting, empty catch blocks and lack of immutability.
+- Detects the following code smells:
+  - !! (Not-null assertion)
+  - Deep nesting
+  - Empty catch blocks
+  - Lack of immutability.
 - Configurable API Key in Tools > PsiKick.
+- Configurable model in Tools > PsiKick:
+  - Gemini 3.1 Flash-Lite (Preview)
+  - Gemini 3 Flash (Preview)
+  - Gemini 2.5 Flash-Lite
+  - Gemini 2.5 Flash
 <!-- Plugin description end -->
+
+## Examples
+
+- !! (Not-null assertion)
+  <img width="702" height="64" alt="Captura de pantalla 2026-05-02 134156" src="https://github.com/user-attachments/assets/68817121-37bd-4a5c-a00d-4225211d59ff" /><br>
+
+- Lack of immutability
+  <img width="684" height="107" alt="Captura de pantalla 2026-05-02 133948" src="https://github.com/user-attachments/assets/07350e20-b39a-43df-9948-4aa23cd7b0d4" /><br>
+
+- Deep nesting
+  <img width="516" height="259" alt="Captura de pantalla 2026-05-02 134015" src="https://github.com/user-attachments/assets/d3e07158-47c4-45f7-b859-f6844ab9feea" /><br>
 
 ## Installation
 
