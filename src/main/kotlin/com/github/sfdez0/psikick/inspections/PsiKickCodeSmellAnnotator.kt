@@ -16,6 +16,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import kotlin.math.abs
 
 /**
  * Represents the file to be analyzed.
@@ -28,11 +29,11 @@ data class AnalyzedFile(val code: String, val fileName: String)
 /**
  * Represents a code smell detected by Gemini.
  *
- * @property startOffset the start offset of the code smell.
- * @property endOffset the end offset of the code smell.
+ * @property line the line number where the code smell begins.
+ * @property code the code fragment causing the code smell.
  * @property message the message describing the code smell.
  */
-data class CodeSmell(val startOffset: Int, val endOffset: Int, val message: String)
+data class CodeSmell(val line: Int, val code: String, val message: String)
 
 /**
  * Represents the request body for the Gemini API.
@@ -78,8 +79,8 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
             Return ONLY a valid JSON array. Do not use markdown code blocks (```json)
             or any conversational text.
             Each object in the JSON array must have the following structure:
-            - "start": (Int) The exact character index where the code smell begins (based on the provided code).
-            - "end": (Int) The exact character index where the code smell ends.
+            - "line": (Int) The exact line number where the code smell begins (starting from 1).
+            - "code": (String) The exact code fragment causing the code smell.
             - "message": (String) A human-readable short description of the code smell.
             Return a maximum of 5 code smells prioritizing the most cricital ones. Keep
             the "message" under 15 words
@@ -91,7 +92,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
      * Collects information about the file to be analyzed.
      *
      * @param file the file to be analyzed.
-     * @return [File] the collected information.
+     * @return [AnalyzedFile] the collected information.
      */
     override fun collectInformation(file: PsiFile): AnalyzedFile {
         return AnalyzedFile(file.text, file.name)
@@ -131,7 +132,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
             .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/${selectedModel.apiId}:generateContent"))
             .header("Content-Type", "application/json")
             .header("x-goog-api-key", token) // Google token header
-            .timeout(Duration.ofSeconds(120)) // TODO set proper timeout
+            .timeout(Duration.ofSeconds(120))
             .POST(HttpRequest.BodyPublishers.ofString(Gson().toJson(requestBody)))
             .build()
 
@@ -162,8 +163,8 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
                     // Add the code smell to the response list
                     aiResponse.add(
                         CodeSmell(
-                            obj.get("start").asInt,
-                            obj.get("end").asInt,
+                            obj.get("line").asInt,
+                            obj.get("code").asString,
                             "PsiKick: " + obj.get("message").asString
                         )
                     )
@@ -187,19 +188,35 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
      * @param holder the annotation holder.
      */
     override fun apply(file: PsiFile, annotationResult: List<CodeSmell>, holder: AnnotationHolder) {
-        val fileLength = file.textLength
-
         // Create annotations for each code smell
         for (smell in annotationResult) {
-            if (smell.startOffset < 0 || smell.endOffset > fileLength || smell.startOffset > smell.endOffset) {
-                log.warn("PsiKick: Invalid code smell detected: ${smell.message}")
-                continue
+            // Get target line (AI -1) forcing min-max range
+            val targetLine = (smell.line - 1).coerceIn(0, maxOf(0, file.fileDocument.lineCount - 1))
+
+            // Get the theoretical code smell line start position
+            val theoreticalOffset = file.fileDocument.getLineStartOffset(targetLine)
+
+            // Create Regex including any number of whitespaces and non-breaking spaces
+            val parts = smell.code.trim().split(Regex("[\\s\\u00A0]+"))
+            val regexPattern = parts.joinToString("[\\s\\u00A0]+") { Regex.escape(it) }
+            val regex = Regex(regexPattern)
+
+            // Find matches in the file
+            val matches = regex.findAll(file.text)
+
+            // Find the closest match to the reported line (in case AI output is off)
+            val bestMatch = matches.minByOrNull { abs(it.range.first - theoreticalOffset) }
+
+            if (bestMatch != null) {
+                val range = TextRange(bestMatch.range.first, bestMatch.range.last + 1)
+
+                holder.newAnnotation(HighlightSeverity.WARNING, smell.message)
+                    .range(range)
+                    .create()
             }
-
-            // Range of the code smell
-            val range = TextRange(smell.startOffset, smell.endOffset)
-
-            holder.newAnnotation(HighlightSeverity.WARNING, smell.message).range(range).create()
+            else{
+                log.warn("PsiKick: Could not find match for code smell: ${smell.message}")
+            }
         }
     }
 }
