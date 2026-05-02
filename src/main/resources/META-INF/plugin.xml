@@ -1,26 +1,40 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.sfdez0.psikick</id>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <name>PsiKick</name>
     <vendor>sfdez0</vendor>
 
     <description><![CDATA[
-    <b>PsiKick</b> uses Gemini 3.1 Flash-Lite Preview to find and highlight code smells in Kotlin.
+    <b>PsiKick</b> uses Gemini AI models to find and highlight code smells in Kotlin.
     <br><br>
     <b>Features:</b>
     <ul>
-      <li>Detects <code>!!</code>, deep nesting, empty catch blocks and lack of immutability.</li>
+      <li>Detects the following code smells:
+        <ul>
+          <li><code>!!</code> (Not-null assertion)</li>
+          <li>Deep nesting</li>
+          <li>Empty catch blocks</li>
+          <li>Lack of immutability</li>
+        </ul>
+      </li>
       <li>Configurable API Key in <i>Tools > PsiKick</i>.</li>
+      <li>Configurable model in <i>Tools > PsiKick</i>:
+        <ul>
+          <li>Gemini 3.1 Flash-Lite (Preview)</li>
+          <li>Gemini 3 Flash (Preview)</li>
+          <li>Gemini 2.5 Flash-Lite</li>
+          <li>Gemini 2.5 Flash</li>
+        </ul>
+      </li>
     </ul>
     ]]></description>
 
     <change-notes><![CDATA[
-    <b>v0.0.2</b>
+    <b>v0.0.3</b>
     <ul>
-      <li>Solved K2 mode incompatibility error</li>
-      <li>Added code smell offset validation</li>
-      <li>Updated build plugins</li>
+      <li>Added support for selecting different Gemini AI models.</li>
+      <li>Fixed syntax highlighting offset issues.</li>
     </ul>
     ]]></change-notes>
 
