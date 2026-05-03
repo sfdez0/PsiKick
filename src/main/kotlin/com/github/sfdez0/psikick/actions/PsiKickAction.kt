@@ -100,15 +100,18 @@ class PsiKickAction : AnAction() {
 
     /**
      * Method called to check if the action should be enabled or not.
-     * * The action is enabled if there is a project and an editor open.
+     * * The action is enabled if there is a project and an editor open with a Kotlin file.
      *
      * @param e The event that triggered the action.
      */
     override fun update(e: AnActionEvent) {
         val project = e.project
         val editor = e.getData(CommonDataKeys.EDITOR)
+        val virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE)
 
-        e.presentation.isEnabledAndVisible = project != null && editor != null
+        val isKotlinFile = virtualFile?.extension == "kt"
+
+        e.presentation.isEnabledAndVisible = project != null && editor != null && isKotlinFile
     }
 
     /**
