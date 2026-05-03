@@ -44,9 +44,9 @@ class PsiKickConfigurable : Configurable {
                 cell(modelComboBox)
                     .comment("Choose a model that fits your API quota and performance needs")
             }
-            row("Gemini API Token:") {
+            row("Gemini API key:") {
                 cell(tokenField)
-                    .comment("Get your token from Google AI Studio")
+                    .comment("Get your API key from Google AI Studio")
             }
         }
     }
