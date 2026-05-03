@@ -1,31 +1,32 @@
-package com.github.sfdez0.psikick.inspections
+package com.github.sfdez0.psikick.actions
 
 import com.github.sfdez0.psikick.settings.PsiKickSettings
-import com.github.sfdez0.psikick.settings.PsiKickSettings.selectedModel
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.intellij.lang.annotation.AnnotationHolder
-import com.intellij.lang.annotation.ExternalAnnotator
-import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.platform.ide.progress.withBackgroundProgress
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiFile
+import com.intellij.openapi.editor.markup.EffectType
+import com.intellij.openapi.editor.markup.HighlighterLayer
+import com.intellij.openapi.editor.markup.HighlighterTargetArea
+import com.intellij.openapi.editor.markup.TextAttributes
+import com.intellij.ui.JBColor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 import kotlin.math.abs
-
-/**
- * Represents the file to be analyzed.
- *
- * @property code the code to be analyzed.
- * @property fileName the name of the file.
- */
-data class AnalyzedFile(val code: String, val fileName: String)
 
 /**
  * Represents a code smell detected by Gemini.
@@ -66,10 +67,11 @@ data class GeminiPart(val text: String)
 data class GenerationConfig(val responseMimeType: String = "application/json")
 
 /**
- * External annotator that uses a Gemini API to analyze Kotlin code and detect code smells.
+ * Action that uses a Gemini API to analyze Kotlin code and detect code smells.
  */
-class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell>>() {
-    private val log = Logger.getInstance(PsiKickCodeSmellAnnotator::class.java)
+class PsiKickAction : AnAction() {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val log = Logger.getInstance(PsiKickAction::class.java)
     private val prompt = """
             You are an expert Kotlin static code analyzer (linter).
             Analyze the Kotlin code attached and detect the following "code smells":
@@ -90,52 +92,97 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
         """.trimIndent()
 
     /**
-     * Collects information about the file to be analyzed.
-     *
-     * @param file the file to be analyzed.
-     * @return [AnalyzedFile] the collected information.
+     * The action is updated in the background thread.
      */
-    override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): AnalyzedFile? {
-        return if (hasErrors)
-            null
-        else
-            AnalyzedFile(file.text, file.name)
+    override fun getActionUpdateThread(): ActionUpdateThread {
+        return ActionUpdateThread.BGT
+    }
+
+    /**
+     * Method called to check if the action should be enabled or not.
+     * * The action is enabled if there is a project and an editor open with a Kotlin file.
+     *
+     * @param e The event that triggered the action.
+     */
+    override fun update(e: AnActionEvent) {
+        val project = e.project
+        val editor = e.getData(CommonDataKeys.EDITOR)
+        val virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE)
+
+        val isKotlinFile = virtualFile?.extension == "kt"
+
+        e.presentation.isEnabledAndVisible = project != null && editor != null && isKotlinFile
+    }
+
+    /**
+     * Method called when the action is triggered.
+     * * The action is executed in the background thread.
+     * * The action is updated in the EDT.
+     *
+     * @param e The event that triggered the action.
+     */
+    override fun actionPerformed(e: AnActionEvent) {
+        val project = e.project ?: return
+        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+        val psiFile = e.getData(CommonDataKeys.PSI_FILE) ?: return
+
+        val fileContent = psiFile.text
+        val fileName = psiFile.name
+
+        scope.launch {
+            try {
+                // Perform the analysis in background (with progress bar)
+                val smells = withBackgroundProgress(project, "PsiKick: Analyzing File...") {
+                    analyzeCode(fileContent, fileName)
+                }
+
+                // Update UI on the main thread
+                withContext(Dispatchers.Main) {
+                    if (!editor.isDisposed) {
+                        applyHighlights(editor, smells)
+                    }
+                }
+            } catch (ex: Exception) {
+                log.error("PsiKick: Error in coroutine execution: ${ex.message}")
+            }
+        }
     }
 
     /**
      * Analyzes the collected information using an AI API and returns a list of code smells.
      *
-     * @param collectedInfo the collected information.
+     * @param codeText The text (code) to analyze.
+     * @param fileName The name of the file being analyzed.
      * @return [List] of [CodeSmell].
      */
-    override fun doAnnotate(collectedInfo: AnalyzedFile): List<CodeSmell> {
-        log.info("PsiKick: Analyzing file ${collectedInfo.fileName} using ${selectedModel.displayName}")
-        val aiResponse = mutableListOf<CodeSmell>()
+    private fun analyzeCode(codeText: String, fileName: String): List<CodeSmell> {
+        log.info("PsiKick: Analyzing file $fileName using ${PsiKickSettings.selectedModel.displayName}")
 
-        // Get the API token from the settings
         val token = PsiKickSettings.apiToken
         if (token.isNullOrBlank()) {
             log.info("PsiKick: Analysis aborted, API token not found")
-            return aiResponse
+            return emptyList()
         }
 
-        // Build the prompt with the code to analyze
+        val codeSmells = mutableListOf<CodeSmell>()
+
+        // Build the prompt with the code text
         val finalPrompt = buildString {
             append(prompt)
-            append(collectedInfo.code)
+            append(codeText)
         }
 
-        // Build the request body with the prompt and API key
+        // Build the request body
         val requestBody = GeminiRequest(
             contents = listOf(GeminiContent(listOf(GeminiPart(text = finalPrompt)))),
             generationConfig = GenerationConfig()
         )
 
-        // Build the HTTP request including the token
+        // Build the HTTP request including the API token
         val request = HttpRequest.newBuilder()
-            .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/${selectedModel.apiId}:generateContent"))
+            .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/${PsiKickSettings.selectedModel.apiId}:generateContent"))
             .header("Content-Type", "application/json")
-            .header("x-goog-api-key", token) // Google token header
+            .header("x-goog-api-key", token)
             .timeout(Duration.ofSeconds(120))
             .POST(HttpRequest.BodyPublishers.ofString(Gson().toJson(requestBody)))
             .build()
@@ -165,7 +212,7 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
                     val obj = smell.asJsonObject
 
                     // Add the code smell to the response list
-                    aiResponse.add(
+                    codeSmells.add(
                         CodeSmell(
                             obj.get("line").asInt,
                             obj.get("code").asString,
@@ -174,31 +221,24 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
                     )
                 }
             } else {
-                log.warn("PsiKick: Error analyzing file ${collectedInfo.fileName} - Request status Code: ${response.statusCode()}")
+                log.warn("PsiKick: Error analyzing file $fileName - Request status Code: ${response.statusCode()}")
             }
-
         } catch (e: Exception) {
-            log.error("PsiKick: Error analyzing file ${collectedInfo.fileName} - Exception: ${e.localizedMessage}")
+            log.error("PsiKick: Error analyzing file $fileName - Exception: ${e.localizedMessage}")
         }
 
-        return aiResponse
+        return codeSmells
     }
 
-    /**
-     * Applies the code smell annotations to the file.
-     *
-     * @param file the file to be annotated.
-     * @param annotationResult the list of code smells.
-     * @param holder the annotation holder.
-     */
-    override fun apply(file: PsiFile, annotationResult: List<CodeSmell>, holder: AnnotationHolder) {
-        // Create annotations for each code smell
+    private fun applyHighlights(editor: Editor, annotationResult: List<CodeSmell>) {
+        val markupModel = editor.markupModel
+
         for (smell in annotationResult) {
             // Get target line (AI -1) forcing min-max range
-            val targetLine = (smell.line - 1).coerceIn(0, maxOf(0, file.fileDocument.lineCount - 1))
+            val targetLine = (smell.line - 1).coerceIn(0, maxOf(0, editor.document.lineCount - 1))
 
             // Get the theoretical code smell line start position
-            val theoreticalOffset = file.fileDocument.getLineStartOffset(targetLine)
+            val theoreticalOffset = editor.document.getLineStartOffset(targetLine)
 
             // Create Regex including any number of whitespaces and non-breaking spaces
             val parts = smell.code.trim().split(Regex("[\\s\\u00A0]+"))
@@ -206,19 +246,28 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
             val regex = Regex(regexPattern)
 
             // Find matches in the file
-            val matches = regex.findAll(file.text)
+            val matches = regex.findAll(editor.document.text)
 
             // Find the closest match to the reported line (in case AI output is off)
             val bestMatch = matches.minByOrNull { abs(it.range.first - theoreticalOffset) }
 
             if (bestMatch != null) {
-                val range = TextRange(bestMatch.range.first, bestMatch.range.last + 1)
+                val textAttributes = TextAttributes().apply {
+                    effectType = EffectType.WAVE_UNDERSCORE
+                    effectColor = JBColor.ORANGE
+                    errorStripeColor = JBColor.ORANGE
+                }
 
-                holder.newAnnotation(HighlightSeverity.WARNING, smell.message)
-                    .range(range)
-                    .create()
-            }
-            else{
+                val highlighter = markupModel.addRangeHighlighter(
+                    bestMatch.range.first,
+                    bestMatch.range.last + 1,
+                    HighlighterLayer.WARNING,
+                    textAttributes,
+                    HighlighterTargetArea.EXACT_RANGE
+                )
+
+                highlighter.errorStripeTooltip = smell.message
+            } else {
                 log.warn("PsiKick: Could not find match for code smell: ${smell.message}")
             }
         }
