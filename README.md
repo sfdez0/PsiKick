@@ -13,7 +13,7 @@ Features:
   - !! (Not-null assertion)
   - Deep nesting
   - Empty catch blocks
-  - Lack of immutability.
+  - Lack of immutability
 - Configurable API Key in Tools > PsiKick.
 - Configurable model in Tools > PsiKick:
   - Gemini 3.1 Flash-Lite (Preview)
@@ -22,16 +22,38 @@ Features:
   - Gemini 2.5 Flash
 <!-- Plugin description end -->
 
+## Configuration
+
+Get your API key from [Google AI Studio](https://aistudio.google.com/api-keys) and choose your preferred model.
+
+<img width="472" height="160" alt="image" src="https://github.com/user-attachments/assets/46c582d2-d6de-430e-9184-d8cd0ce6a4bf" />
+
+
+## Usage
+
+- Editor Popup menu (right-click inside the editor).
+
+<img width="424" height="121" alt="Captura de pantalla 2026-05-03 210349" src="https://github.com/user-attachments/assets/0f1ff0a9-49f2-401c-9a34-921add8b6098" /><br>
+
+- Tools menu.
+
+<img width="345" height="477" alt="Captura de pantalla 2026-05-03 210358" src="https://github.com/user-attachments/assets/3cd3f9c7-fe96-4182-8000-7073ac75cf1e" /><br>
+
+- Analysis in progress.
+
+<img width="291" height="33" alt="Captura de pantalla 2026-05-03 210411" src="https://github.com/user-attachments/assets/9a50191c-b906-4a0f-81da-df1bb95c4708" /><br>
+
+
 ## Examples
 
-- !! (Not-null assertion)
-  <img width="702" height="64" alt="Captura de pantalla 2026-05-02 134156" src="https://github.com/user-attachments/assets/68817121-37bd-4a5c-a00d-4225211d59ff" /><br>
+- !! (Not-null assertion).
 
-- Lack of immutability
-  <img width="684" height="107" alt="Captura de pantalla 2026-05-02 133948" src="https://github.com/user-attachments/assets/07350e20-b39a-43df-9948-4aa23cd7b0d4" /><br>
+<img width="754" height="134" alt="Captura de pantalla 2026-05-03 210832" src="https://github.com/user-attachments/assets/6a0defd1-8eec-4fd7-a25b-c62988bfed4f" /><br>
 
-- Deep nesting
-  <img width="516" height="259" alt="Captura de pantalla 2026-05-02 134015" src="https://github.com/user-attachments/assets/d3e07158-47c4-45f7-b859-f6844ab9feea" /><br>
+- Deep nesting.
+
+<img width="712" height="166" alt="Captura de pantalla 2026-05-03 210903" src="https://github.com/user-attachments/assets/cad48ff1-4084-4f3b-bf18-14c2930dc97c" /><br>
+
 
 ## Installation
 
@@ -54,6 +76,7 @@ Features:
 
 
 ---
+
 
 ## Author
 
