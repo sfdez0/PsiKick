@@ -9,6 +9,7 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.ExternalAnnotator
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import java.net.URI
@@ -94,8 +95,11 @@ class PsiKickCodeSmellAnnotator : ExternalAnnotator<AnalyzedFile, List<CodeSmell
      * @param file the file to be analyzed.
      * @return [AnalyzedFile] the collected information.
      */
-    override fun collectInformation(file: PsiFile): AnalyzedFile {
-        return AnalyzedFile(file.text, file.name)
+    override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): AnalyzedFile? {
+        return if (hasErrors)
+            null
+        else
+            AnalyzedFile(file.text, file.name)
     }
 
     /**
