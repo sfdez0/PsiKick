@@ -232,6 +232,7 @@ class PsiKickAction : AnAction() {
 
     private fun applyHighlights(editor: Editor, annotationResult: List<CodeSmell>) {
         val markupModel = editor.markupModel
+        markupModel.removeAllHighlighters()
 
         for (smell in annotationResult) {
             // Get target line (AI -1) forcing min-max range
