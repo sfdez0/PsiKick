@@ -5,7 +5,7 @@ rootProject.name = "PsiKick"
 pluginManagement {
     plugins {
         id("org.jetbrains.kotlin.jvm") version "2.4.0"
-        id("org.jetbrains.intellij.platform") version "2.16.0"
+        id("org.jetbrains.intellij.platform") version "2.18.1"
         id("org.jetbrains.changelog") version "2.5.0"
     }
 }
